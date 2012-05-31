@@ -1,6 +1,6 @@
 import scala.util.Random
 
-import qwertybot._
+import lambdabot._
 
 class ControlFunctionFactory {
   def create = new ControlFunction().respond _

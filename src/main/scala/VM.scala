@@ -1,4 +1,4 @@
-package qwertybot
+package lambdabot
 
 import scala.collection.immutable.Stack
 

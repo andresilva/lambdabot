@@ -1,4 +1,4 @@
-package qwertybot
+package lambdabot
 
 case class View(v: IndexedSeq[Cell])
 

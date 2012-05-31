@@ -1,4 +1,4 @@
-package qwertybot
+package lambdabot
 
 case class Coordinate(x: Int, y: Int) {
   override def toString = "%s:%s".format(x, y)

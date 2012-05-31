@@ -1,4 +1,4 @@
-package qwertybot
+package lambdabot
 
 import scalaz.std.option._
 import scalaz.std.anyVal._

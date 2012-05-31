@@ -8,13 +8,13 @@ object Build extends Build {
   val play = TaskKey[Unit]("play")
 
   val bot = Project(
-    id = "qwertybot",
+    id = "lambdabot",
     base = file("."),
     settings = Project.defaultSettings ++ botSettings ++ assemblySettings)
 
   val botSettings = Seq[Setting[_]](
-      organization := "qwertybot",
-      name := "qwertybot",
+      organization := "lambdabot",
+      name := "lambdabot",
       version := "1.0.0-SNAPSHOT",
 
       scalaVersion := "2.9.1",

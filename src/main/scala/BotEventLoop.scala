@@ -4,13 +4,7 @@ import scala.util.Random
 
 object BotEventLoop {
   def process(input: String) = {
-    val opcode = Opcode.deserialize(input)
-
-    val vm = opcode match {
-      case r: React => r.map.get("vm").map(VM.apply).map(_.push(r.time, r))
-      case w: Welcome => Some(VM(opcode))
-      case _ => None
-    }
+    val vm = VM(input)
 
     stub(input)
   }
@@ -26,4 +20,8 @@ object BotEventLoop {
       ""
     }
   }
+
+  // TODO
+  // b64 encoder to encode VMs as strings
+  // start creating bot brains
 }

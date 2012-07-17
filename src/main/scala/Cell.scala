@@ -1,8 +1,5 @@
 package lambdabot
 
-import scala.collection.immutable.Stack
-import VM.Types._
-
 sealed trait Cell
 
 sealed trait Good
@@ -16,7 +13,7 @@ sealed trait Beast
 
 case class Invisible() extends Cell
 case class Empty() extends Cell
-case class Wall() extends Cell
+case class Wall() extends Cell with Bad
 case class MyBot() extends Cell with Mine
 case class EnemyBot() extends Cell with Enemy
 case class MyMiniBot() extends Cell with Mine

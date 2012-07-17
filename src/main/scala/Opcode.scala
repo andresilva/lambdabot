@@ -2,10 +2,12 @@ package lambdabot
 
 import scalaz.std.option._
 import scalaz.std.anyVal._
+import scalaz.std.list._
 import scalaz.syntax.applicative._
+import scalaz.syntax.traverse._
 
 sealed trait Opcode {
-  final def serialize: String = {
+  def serialize: String = {
     val opcode = this.getClass.getSimpleName
     val params = serializeParams
 
@@ -28,11 +30,15 @@ sealed trait ServerOpcode extends Opcode
 sealed trait NeutralOpcode extends BotOpcode
 
 case class Exception() extends ServerOpcode with BotOpcode
+case class NoOp() extends ServerOpcode with BotOpcode {
+  override def serialize = ""
+}
 
 case class Welcome(name: String, apocalyse: Int, round: Int) extends ServerOpcode
 
 case class React(generation: Int, name: String, time: Int, view: View,
-                 energy: Int, master: Option[Coordinate], collision: Option[Coordinate],
+                 energy: Int, master: Option[Coordinate] = None,
+                 collision: Option[Coordinate] = None,
                  map: Map[String, String]) extends ServerOpcode
 
 case class Goodbye(energy: Int) extends ServerOpcode
@@ -41,10 +47,11 @@ case class Move(direction: Coordinate) extends BotOpcode {
   override protected def serializeParamsAsMap = Map("direction" -> direction.toString)
 }
 
-case class Spawn(direction: Coordinate, name: String, energy: Int) extends BotOpcode {
+case class Spawn(direction: Coordinate, name: String, energy: Int,
+                 map: Map[String, String] = Map[String, String]()) extends BotOpcode {
   override protected def serializeParamsAsMap = Map("direction" -> direction.toString,
-                                         "name" -> name,
-                                         "energy" -> energy.toString)
+                                                    "name" -> name,
+                                                    "energy" -> energy.toString) ++ map
 }
 
 case class Set(map: Map[String, String]) extends BotOpcode {
@@ -65,13 +72,13 @@ case class Status(text: String) extends NeutralOpcode {
 
 case class MarkCell(position: Coordinate, color: String) extends NeutralOpcode {
   override protected def serializeParamsAsMap = Map("position" -> position.toString,
-                                    "color" -> color)
+                                                    "color" -> color)
 }
 
 case class DrawLine(from: Coordinate, to: Coordinate, color: String) extends NeutralOpcode {
   override protected def serializeParamsAsMap = Map("from" -> from.toString,
-                                    "to" -> to.toString,
-                                    "color" -> color)
+                                                    "to" -> to.toString,
+                                                    "color" -> color)
 }
 
 case class Log(text: String) extends NeutralOpcode {
@@ -79,12 +86,10 @@ case class Log(text: String) extends NeutralOpcode {
 }
 
 object Opcode {
-  def serialize(o: BotOpcode): String = {
-    o.serialize
-  }
+  def serialize(ops: List[Opcode]) = ops.map(_.serialize).mkString("|")
 
-  def deserialize(s: String): ServerOpcode = {
-    val OpcodeRegex = "^(\\w+)\\(([a-zA-Z0-9=,:]+)\\)$".r
+  def apply(s: String): ServerOpcode = {
+    val OpcodeRegex = """^(\w+)\((.+)\)$""".r
 
     try {
       val OpcodeRegex(opcode, p) = s
@@ -103,20 +108,26 @@ object Opcode {
           (name |@| apocalypse |@| round) apply Welcome.apply
         }
         case "React" => {
-          val generation = params.get("generation").map(_.toInt)
+          val generation = params.get("generation")
           val name = params.get("name")
-          val time = params.get("time").map(_.toInt)
-          val view = params.get("view").map(View.apply)
-          val energy = params.get("energy").map(_.toInt)
-          val master = params.get("master").map(Coordinate.apply)
-          val collision = params.get("collision").map(Coordinate.apply)
+          val time = params.get("time")
+          val view = params.get("view")
+          val energy = params.get("energy")
+          val master = params.get("master").flatMap(Coordinate.apply)
+          val collision = params.get("collision").flatMap(Coordinate.apply)
 
-          val map =
-            Some(params - ("generation", "name", "time",
-                           "view", "energy", "master", "collision"))
+          val map = params - ("generation", "name", "time",
+                              "view", "energy", "master", "collision")
 
-          (generation |@| name |@| time |@| view |@|
-           energy |@| master |@| collision |@| map) apply React.apply
+          // (generation |@| name |@| time |@| view |@|
+          //  energy |@| master |@| collision |@| map) apply
+          //  React.apply
+
+          List(generation, name, time, view, energy).sequence.map {
+            case (generation :: name :: time :: view :: energy :: Nil) =>
+              React(generation.toInt, name, time.toInt, View(view), energy.toInt,
+                    master, collision, map)
+          }
         }
         case "Goodbye" => {
           val energy = params.get("energy").map(_.toInt)
